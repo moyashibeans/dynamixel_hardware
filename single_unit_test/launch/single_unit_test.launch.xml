@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="model_file" default="$(find-pkg-share single_unit_test)/urdf/dynamixel_test.urdf.xacro"/>
+  <arg name="robot_description" default="$(command 'xacro $(var model_file)')"/>
+  <arg name="controller_param" default="$(find-pkg-share single_unit_test)/config/controllers.yaml"/>
+  <arg name="rviz_config_path" default="$(find-pkg-share single_unit_test)/rviz/urdf.rviz"/>
+  <arg name="use_velocity_controller" default="False"/>
+  <arg name="use_position_controller" default="False"/>
+  <arg name="use_effort_controller" default="False"/>
+
+  <node pkg="controller_manager" exec="ros2_control_node">
+    <param from="$(var controller_param)"/>
+    <remap from="~/robot_description" to="robot_description"/>
+  </node>
+
+  <node pkg="controller_manager" exec="spawner" args="joint_state_broadcaster --controller-manager /controller_manager"/>
+
+  <!-- Use velocity_controller-->
+  <group if="$(var use_velocity_controller)">
+    <node pkg="controller_manager" exec="spawner" args="velocity_controller --controller-manager /controller_manager"/>
+  </group>
+  <group unless="$(var use_velocity_controller)">
+    <node pkg="controller_manager" exec="spawner" args="velocity_controller --controller-manager /controller_manager --inactive"/>
+  </group>
+
+  <!-- Use position_controller-->
+  <group if="$(var use_position_controller)">
+    <node pkg="controller_manager" exec="spawner" args="position_controller --controller-manager /controller_manager"/>
+  </group>
+  <group unless="$(var use_position_controller)">
+    <node pkg="controller_manager" exec="spawner" args="position_controller --controller-manager /controller_manager --inactive"/>
+  </group>
+
+  <!-- Use effort_controller-->
+  <group if="$(var use_effort_controller)">
+    <node pkg="controller_manager" exec="spawner" args="effort_controller --controller-manager /controller_manager"/>
+  </group>
+  <group unless="$(var use_effort_controller)">
+    <node pkg="controller_manager" exec="spawner" args="effort_controller --controller-manager /controller_manager --inactive"/>
+  </group>
+
+  <node pkg="robot_state_publisher" exec="robot_state_publisher">
+    <param name="robot_description" value="$(var robot_description)"/>
+  </node>
+  <node pkg="rviz2" exec="rviz2" output="screen" args="-d $(var rviz_config_path)">
+    <param name="robot_description" value="$(var robot_description)"/>
+  </node>
+</launch>
